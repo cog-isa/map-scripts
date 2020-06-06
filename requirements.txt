@@ -1,0 +1,9 @@
+wheel
+numpy
+scipy
+sklearn
+google
+grpcio
+pandas
+google-api-python-client
+git+https://github.com/IINemo/isanlp.git
