@@ -17,5 +17,6 @@ setup(name='ScriptExtract',
       description='Script Extractions',
       packages=find_packages(exclude=['ScriptExtract']),
       include_package_data = True,
+      package_data = {"ScriptExtract/Preprocessing/Parser":[".cfg"]},
       long_description=open('README.md').read(),
       zip_safe=False)

@@ -1,2 +1,3 @@
 include ScriptExtract/Preprocessing/Anaphora/Model/*
+include ScriptExtract/Preprocessing/Anaphora/Parser/*.cfg
 include ScriptExtract/Preprocessing/Parser/*.cfg
