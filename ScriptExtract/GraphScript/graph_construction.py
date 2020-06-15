@@ -344,9 +344,9 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
     # Add links Script -> action
     for num_act in num_signifs:
         name_act = sign_num_act[num_act]
-        signifs[name_act] = actions_sign[name_act].add_significance()
-        connector = signifs[name_act].add_feature(signifs["Script"], zero_out=True)
-        S.add_out_significance(connector)
+        signifs[name_act] = S.add_significance()
+        connector = signifs["Script"].add_feature(signifs[name_act], zero_out=True)
+        actions_sign[name_act].add_out_significance(connector)
     
     for key in feature_dict:
         obj = key
@@ -361,13 +361,13 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
                 role_sign[role] = Sign(role)
                 
     		# Add links action -> role
-            signifs[role] = role_sign[role].add_significance()
-            connector = signifs[role].add_feature(signifs[name_act], zero_out=True)
-            actions_sign[name_act].add_out_significance(connector)
+            signifs[role] = actions_sign[name_act].add_significance()
+            connector = signifs[name_act].add_feature(signifs[role], zero_out=True)
+            role_sign[role].add_out_significance(connector)
             
     		# Add links role -> Placeholders
-            signifs[obj] = obj_sign[obj].add_significance()
-            connector = signifs[obj].add_feature(signifs[role], zero_out=True)
-            role_sign[role].add_out_significance(connector)
+            signifs[obj] = role_sign[role].add_significance()
+            connector = signifs[role].add_feature(signifs[obj], zero_out=True)
+            obj_sign[obj].add_out_significance(connector)
     return S, actions_sign, role_sign, obj_sign, signifs
 	
