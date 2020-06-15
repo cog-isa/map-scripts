@@ -1,3 +1,4 @@
+map-core
 wheel
 numpy
 scipy
