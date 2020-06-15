@@ -8,7 +8,7 @@ Created on Thu Apr 16 06:06:57 2020
 
 import numpy as np
 import copy
-from ScriptExtract.Preprocessing.TextProcessing import table as Table
+from ScriptExtract.Preprocessing.TextProcessing import Table
 from ScriptExtract.GraphScript import graph_construction
 
 def get_feature_dict(table, key_word = "depend_lemma"):

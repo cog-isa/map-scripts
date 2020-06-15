@@ -254,7 +254,7 @@ class text_separation():
 			return self.structure
 
 
-class table:
+class Table:
 	def __init__(self, use_sem = True):
 		self.use_sem = use_sem
 		
