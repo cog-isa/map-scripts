@@ -1,4 +1,4 @@
-map-core
+git+https://github.com/cog-isa/map-core
 wheel
 numpy
 scipy
