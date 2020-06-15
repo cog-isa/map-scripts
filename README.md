@@ -5,13 +5,15 @@ Project on searching "scripts" in russian texts.
 
 Do the following steps:
 
-1. `git clone https://github.com/ASEDOS999/SearchScript`
+1. Install 'map-core' from [the repository](https://github.com/cog-isa/map-core)
 
-2. `pip install -r  requirements.txt`
+2. `git clone https://github.com/ASEDOS999/SearchScript`
 
-3. `python3 setup.py install`
+3. `pip install -r  requirements.txt`
 
-4. (optional) `pip install jupyterlab`
+4. `python3 setup.py install`
+
+5. (optional) `pip install jupyterlab`
 
 Before each start of work run the following command:
 
