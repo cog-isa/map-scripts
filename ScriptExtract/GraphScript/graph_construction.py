@@ -8,7 +8,7 @@ Created on Thu Apr 16 06:06:57 2020
 
 import numpy as np
 import copy
-from ScriptExtract.Preprocessing.TextProcessing import table
+from ScriptExtract.Preprocessing.TextProcessing import table as Table
 from ScriptExtract.GraphScript import graph_construction
 
 def get_feature_dict(table, key_word = "depend_lemma"):
@@ -120,7 +120,7 @@ def construct_graph(table,
                     ):
     """
     'table' is The result of 
-        ScriptExtract.Preprocessing.TextProcessing.table().get_table
+        ScriptExtract.Preprocessing.TextProcessing.Table().get_table
     'key_word' is type of analysed verb argument
     'with_next' is booolean. If True Construct edges 
         between neibourghood in one document.
@@ -177,7 +177,7 @@ def graph_inform(V, E):
 def equal_word(word, word1):
     return word.begin == word1['start'] and word.end == word1['end']
 
-class script:
+class Script:
     def __init__(self, V, E, full_list_actions, start = (-1,-1), end = (-2,-2)):
         self.V, self.E = V, E
         self.start = start
@@ -261,9 +261,9 @@ class script:
         return self.E[v]
 	
 def get_srcipt(list_files, name_table = "1.pickle", key_word = "sem_rel"):
-	table_ = table().get_table(list_files, test = lambda act: True, name_table = name_table)
+	table_ = Table().get_table(list_files, test = lambda act: True, name_table = name_table)
 	(E, V), (start, end), (full_list_actions, verb_dict, feature_dict) = graph_construction.construct_graph(table_, key_word = key_word)
-	script_ = script(V,E, full_list_actions)
+	script_ = Script(V,E, full_list_actions)
 	return script_
 
 def union(sentence, list_):
@@ -308,7 +308,7 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
     	
     # Extract semantic relations and syntactic dependences for all texts in list_files
     # into table
-    table_ = table(use_sem = True).get_table(list_files, test = lambda act: True, name_table = name_table)
+    table_ = Table(use_sem = True).get_table(list_files, test = lambda act: True, name_table = name_table)
     full_list_actions, verb_dict, feature_dict = get_feature_dict(table_, key_word = 'sem_rel')
     
     # The script sign
