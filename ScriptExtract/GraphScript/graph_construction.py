@@ -294,3 +294,58 @@ def print_dict(v_desr):
             for j in i['субъект']:
                 print("%s (%s) - %s (%s)"%(j[0].lemma, union(i['Sentence'], j[1]),
                                            i['verb'][0].lemma, union(i['Sentence'], i['verb'][1])))
+
+from mapcore.swm.src.components.semnet import Sign
+
+def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
+	if name_table is None:
+		name_table = "DELETE.pickle"
+	table_ = table(use_sem = True).get_table(list_files, test = lambda act: True, name_table = name_table)
+	full_list_actions, verb_dict, feature_dict = get_feature_dict(table_, key_word = 'sem_rel')
+	
+	S = Sign("Script")
+	actions_sign = {}
+	role_sign = {}
+	obj_sign = {}
+	signifs = {}
+	
+	signifs["Script"] = S.add_significance()
+
+	num_signifs = set()
+	sign_num_act = {}
+	for act in verb_dict:
+	    actions_sign[act] = Sign(act)
+	    new = set(verb_dict[act].keys())
+	    for i in new:
+	        sign_num_act[i] = act
+	    num_signifs = num_signifs.union(new)
+	num_signifs = list(num_signifs)
+	num_signifs.sort(key = lambda x: x[1])
+
+	for num_act in num_signifs:
+	    name_act = sign_num_act[num_act]
+	    signifs[name_act] = actions_sign[name_act].add_significance()
+	    connector = signifs[name_act].add_feature(signifs["Script"], zero_out=True)
+	    S.add_out_significance(connector)
+	
+	for key in feature_dict:
+	    obj = key
+	    if not obj in obj_sign:
+	        obj_sign[obj] = Sign(obj)
+	    roles = feature_dict[key]
+	    for num_act in roles:
+	        role = roles[num_act]
+	        name_act = sign_num_act[num_act]
+	        
+	        if not role in role_sign:
+	            role_sign[role] = Sign(role)
+	            
+	        signifs[role] = role_sign[role].add_significance()
+	        connector = signifs[role].add_feature(signifs[name_act], zero_out=True)
+	        actions_sign[name_act].add_out_significance(connector)
+	        
+	        signifs[obj] = obj_sign[obj].add_significance()
+	        connector = signifs[obj].add_feature(signifs[role], zero_out=True)
+	        role_sign[role].add_out_significance(connector)
+	return S, actions_sign, role_sign, obj_sign, signifs
+	
