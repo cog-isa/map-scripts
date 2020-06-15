@@ -298,15 +298,34 @@ def print_dict(v_desr):
 from mapcore.swm.src.components.semnet import Sign
 
 def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
+	"""
+	This function creates Script and required signs for it and 
+	for the actions, roles and their possible placeholders (objects).
+	"""
+	
 	if name_table is None:
 		name_table = "DELETE.pickle"
+		
+	# Extract semantic relations and syntactic dependences for all texts in list_files
+	# into table
 	table_ = table(use_sem = True).get_table(list_files, test = lambda act: True, name_table = name_table)
 	full_list_actions, verb_dict, feature_dict = get_feature_dict(table_, key_word = 'sem_rel')
 	
+	# The script sign
 	S = Sign("Script")
+	
+	# The keys of the following dictionaries are signs name. The value is sign
+	
+	# Actions signs
 	actions_sign = {}
+	
+	# Roles signs
 	role_sign = {}
+	
+	# Placeholders signs
 	obj_sign = {}
+	
+	# Significances
 	signifs = {}
 	
 	signifs["Script"] = S.add_significance()
@@ -321,7 +340,8 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
 	    num_signifs = num_signifs.union(new)
 	num_signifs = list(num_signifs)
 	num_signifs.sort(key = lambda x: x[1])
-
+	
+	# Add links Script -> action
 	for num_act in num_signifs:
 	    name_act = sign_num_act[num_act]
 	    signifs[name_act] = actions_sign[name_act].add_significance()
@@ -340,10 +360,12 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
 	        if not role in role_sign:
 	            role_sign[role] = Sign(role)
 	            
+			# Add links action -> role
 	        signifs[role] = role_sign[role].add_significance()
 	        connector = signifs[role].add_feature(signifs[name_act], zero_out=True)
 	        actions_sign[name_act].add_out_significance(connector)
 	        
+			# Add links role -> Placeholders
 	        signifs[obj] = obj_sign[obj].add_significance()
 	        connector = signifs[obj].add_feature(signifs[role], zero_out=True)
 	        role_sign[role].add_out_significance(connector)
