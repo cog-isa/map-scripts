@@ -197,12 +197,13 @@ class Script:
         self.V = [i for i in self.V if i!= start and i!=end]
         self.V = [start] + self.V + [end]
         self.V_descr[start] = {}
-        previous = start
+        #previous = start
         for v in self.V[1:]:
             if v in self.E and len(self.E[v]) >0 or v == end:
-                self.V_descr[v] = copy.deepcopy(self.V_descr[previous])
+                #self.V_descr[v] = copy.deepcopy(self.V_descr[previous])
+                self.V_descr[v] = {}
                 self.update(v)
-                previous = v
+                #previous = v
         return None
     
     def update(self, v):
@@ -212,9 +213,12 @@ class Script:
             self.V_descr[v]['Sentence'] = sentence
         else:
             self.V_descr[v]['Sentence'] = ''
+        if 'verb' in inform:
+            self.V_descr[v]['verb'] = inform['VERB']
         if 'локатив' in inform:
             self.V_descr[v]['локатив'] = {'локатив':inform['локатив'],
-                                          'Sentence':sentence}
+                                          'Sentence':sentence,
+                                          'verb': inform['VERB']}
         if 'объект' in inform:
             obj = {'объект':inform['объект'],
                     'verb':inform['VERB'],
@@ -233,7 +237,8 @@ class Script:
                 self.V_descr[v]['субъект'] = [subj]
         if 'темпоратив' in inform:
             self.V_descr[v]['темпоратив'] = {'темпоратив':inform['темпоратив'],
-                                          'Sentence':sentence}
+                                          'Sentence':sentence,
+                                          'verb': inform['VERB']}
         
     def _get_inform(self, v, full_list_actions):
         if v == self.start or v == self.end:
@@ -295,79 +300,122 @@ def print_dict(v_desr):
                 print("%s (%s) - %s (%s)"%(j[0].lemma, union(i['Sentence'], j[1]),
                                            i['verb'][0].lemma, union(i['Sentence'], i['verb'][1])))
 
-from mapcore.swm.src.components.semnet import Sign
+def _add_signifs(name_act, full_name_obj, role_name,
+                actions_sign = {}, role_sign = {}, obj_sign = {}, signifs = {}):
+        if not role_name in role_sign:
+            role_sign[role_name] = Sign(role_name)
+        
+        # action -> locativ
+        connector = signifs[name_act].add_feature(signifs[role_name], zero_out=True)
+        role_sign[role_name].add_out_significance(connector)
+        
+        # locativ -> placeholder
+        if not full_name_obj in obj_sign:
+            obj_sign[full_name_obj] = Sign(full_name_obj)
+        signifs[role_name] = role_sign[role_name].add_significance()
+        connector = signifs[role_name].add_feature(signifs[full_name_obj], zero_out=True)
+        obj_sign[full_name_obj].add_out_significance(connector)
 
+def add_signifs(v_descr,
+                S = None,
+                actions_sign = {}, role_sign = {}, obj_sign = {}, signifs = {},
+                script_name = "Script",
+                locativ_name = 'локатив', temporativ_name = 'темпоратив',
+                subj_name = 'субъект', obj_name= 'объект'):
+    if 'Sentence' in v_descr:
+        sentence = v_descr['Sentence']
+    else:
+        return
+    
+    if 'verb' in v_descr:
+        name_act = v_descr['verb'][0].lemma
+        if not name_act in actions_sign:
+            actions_sign[name_act] = Sign(name_act)
+        signifs[script_name] = S.add_significance()
+        connector = signifs[script_name].add_feature(signifs[name_act], zero_out=True)
+        actions_sign[name_act].add_out_significance(connector)
+    else:
+        return
+    
+    signifs[name_act] = actions_sign[name_act].add_significance()
+    
+    if 'локатив' in v_descr:
+        full_locativ = union(sentence, v_descr['локатив'][1])
+        _add_signifs(name_act, full_locativ, locativ_name,
+                     actions_sign = actions_sign,
+                     role_sign = role_sign,
+                     obj_sign = obj_sign,
+                     signifs = signifs)
+        
+    if 'темпоратив' in v_descr:
+        full_temporativ = union(sentence, v_descr['темпоратив'][1])
+        _add_signifs(name_act, full_temporativ, temporativ_name,
+                     actions_sign = actions_sign,
+                     role_sign = role_sign,
+                     obj_sign = obj_sign,
+                     signifs = signifs)
+        
+    if 'объект' in v_descr:
+        print('\nобъект'.upper())
+        obj = v_descr['объект']
+        for i in obj:
+            for j in i['объект']:
+                full_obj = union(sentence, j[1])
+                _add_signifs(name_act, full_obj, obj_name,
+                             actions_sign = actions_sign,
+                             role_sign = role_sign,
+                             obj_sign = obj_sign,
+                             signifs = signifs)
+    if 'субъект' in v_descr:
+        obj = v_descr['субъект']
+        for i in obj:
+            for j in i['субъект']:
+                full_subj = union(sentence, j[1])
+                _add_signifs(name_act, full_subj, subj_name,
+                             actions_sign = actions_sign,
+                             role_sign = role_sign,
+                             obj_sign = obj_sign,
+                             signifs = signifs)
+
+from mapcore.swm.src.components.semnet import Sign
 def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
     """
-    This function creates Script and required signs for it and 
+    This function creates Script and the required signs for it and 
     for the actions, roles and their possible placeholders (objects).
+    
+    The adding of connectors in Script is implemented in function add_significance
+    
+    This function returns the Sign of Script (S),
+                        the signs of actions (dict 'actions_sign'),
+                        the role signs (dict 'role_sign'),
+                        the placeholders signs (dict 'obj_sign'),
+                        significances (dict 'signifs')
     """
     
     if name_table is None:
-    	name_table = "DELETE.pickle"
+        name_table = "DELETE.pickle"
     	
     # Extract semantic relations and syntactic dependences for all texts in list_files
     # into table
-    table_ = Table(use_sem = True).get_table(list_files, test = lambda act: True, name_table = name_table)
-    full_list_actions, verb_dict, feature_dict = get_feature_dict(table_, key_word = 'sem_rel')
+    graph_script = get_srcipt(list_files, name_table)
+    V_descr = graph_script.V_descr
     
     # The script sign
     S = Sign("Script")
     
     # The keys of the following dictionaries are signs name. The value is sign
-    
-    # Actions signs
     actions_sign = {}
-    
-    # Roles signs
     role_sign = {}
-    
-    # Placeholders signs
     obj_sign = {}
-    
-    # Significances
     signifs = {}
     
     signifs["Script"] = S.add_significance()
     
-    num_signifs = set()
-    sign_num_act = {}
-    for act in verb_dict:
-        actions_sign[act] = Sign(act)
-        new = set(verb_dict[act].keys())
-        for i in new:
-            sign_num_act[i] = act
-        num_signifs = num_signifs.union(new)
-    num_signifs = list(num_signifs)
-    num_signifs.sort(key = lambda x: x[1])
-    
-    # Add links Script -> action
-    for num_act in num_signifs:
-        name_act = sign_num_act[num_act]
-        signifs[name_act] = S.add_significance()
-        connector = signifs["Script"].add_feature(signifs[name_act], zero_out=True)
-        actions_sign[name_act].add_out_significance(connector)
-    
-    for key in feature_dict:
-        obj = key
-        if not obj in obj_sign:
-            obj_sign[obj] = Sign(obj)
-        roles = feature_dict[key]
-        for num_act in roles:
-            role = roles[num_act]
-            name_act = sign_num_act[num_act]
-            
-            if not role in role_sign:
-                role_sign[role] = Sign(role)
-                
-            # Add links action -> role
-            signifs[name_act] = actions_sign[name_act].add_significance()
-            connector = signifs[name_act].add_feature(signifs[role], zero_out=True)
-            role_sign[role].add_out_significance(connector)
-            
-            # Add links role -> Placeholders
-            signifs[role] = role_sign[role].add_significance()
-            connector = signifs[role].add_feature(signifs[obj], zero_out=True)
-            obj_sign[obj].add_out_significance(connector)
+    for v in graph_script.V:
+        add_signifs(V_descr[v],
+                    S = S,
+                    signifs = signifs,
+                    actions_sign = actions_sign,
+                    role_sign = role_sign,
+                    obj_sign = obj_sign)    
     return S, actions_sign, role_sign, obj_sign, signifs
-	
