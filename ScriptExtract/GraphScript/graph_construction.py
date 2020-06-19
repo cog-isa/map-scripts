@@ -213,7 +213,7 @@ class Script:
             self.V_descr[v]['Sentence'] = sentence
         else:
             self.V_descr[v]['Sentence'] = ''
-        if 'verb' in inform:
+        if 'VERB' in inform:
             self.V_descr[v]['verb'] = inform['VERB']
         if 'локатив' in inform:
             self.V_descr[v]['локатив'] = {'локатив':inform['локатив'],
@@ -304,6 +304,7 @@ def _add_signifs(name_act, full_name_obj, role_name,
                 actions_sign = {}, role_sign = {}, obj_sign = {}, signifs = {}):
         if not role_name in role_sign:
             role_sign[role_name] = Sign(role_name)
+            signifs[role_name] = role_sign[role_name].add_significance()
         
         # action -> locativ
         connector = signifs[name_act].add_feature(signifs[role_name], zero_out=True)
@@ -312,6 +313,7 @@ def _add_signifs(name_act, full_name_obj, role_name,
         # locativ -> placeholder
         if not full_name_obj in obj_sign:
             obj_sign[full_name_obj] = Sign(full_name_obj)
+            signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
         signifs[role_name] = role_sign[role_name].add_significance()
         connector = signifs[role_name].add_feature(signifs[full_name_obj], zero_out=True)
         obj_sign[full_name_obj].add_out_significance(connector)
@@ -331,6 +333,7 @@ def add_signifs(v_descr,
         name_act = v_descr['verb'][0].lemma
         if not name_act in actions_sign:
             actions_sign[name_act] = Sign(name_act)
+            signifs[name_act] = actions_sign[name_act].add_significance()
         signifs[script_name] = S.add_significance()
         connector = signifs[script_name].add_feature(signifs[name_act], zero_out=True)
         actions_sign[name_act].add_out_significance(connector)
@@ -340,7 +343,7 @@ def add_signifs(v_descr,
     signifs[name_act] = actions_sign[name_act].add_significance()
     
     if 'локатив' in v_descr:
-        full_locativ = union(sentence, v_descr['локатив'][1])
+        full_locativ = union(sentence, v_descr['локатив']['локатив'][0][1])
         _add_signifs(name_act, full_locativ, locativ_name,
                      actions_sign = actions_sign,
                      role_sign = role_sign,
@@ -356,7 +359,6 @@ def add_signifs(v_descr,
                      signifs = signifs)
         
     if 'объект' in v_descr:
-        print('\nобъект'.upper())
         obj = v_descr['объект']
         for i in obj:
             for j in i['объект']:
