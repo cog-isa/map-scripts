@@ -360,12 +360,12 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
             if not role in role_sign:
                 role_sign[role] = Sign(role)
                 
-    		# Add links action -> role
+            # Add links action -> role
             signifs[name_act] = actions_sign[name_act].add_significance()
             connector = signifs[name_act].add_feature(signifs[role], zero_out=True)
             role_sign[role].add_out_significance(connector)
             
-    		# Add links role -> Placeholders
+            # Add links role -> Placeholders
             signifs[role] = role_sign[role].add_significance()
             connector = signifs[role].add_feature(signifs[obj], zero_out=True)
             obj_sign[obj].add_out_significance(connector)
