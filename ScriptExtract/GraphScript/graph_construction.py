@@ -10,6 +10,7 @@ import numpy as np
 import copy
 from ScriptExtract.Preprocessing.TextProcessing import Table
 import pymorphy2
+from ScriptExtract.Preprocessing.action import get_tree
 
 def get_feature_dict(table, key_word = "depend_lemma"):
     full_list_actions = []
@@ -302,6 +303,34 @@ def print_dict(v_desr):
 
 def _add_signifs(name_act, full_name_obj, role_name,
                 actions_sign = {}, role_sign = {}, obj_sign = {}, signifs = {}):
+    """
+    The function has to add events into cause of action 'name_act'
+    
+    The input of function:
+        name_act (string)
+            Name of action. Invinitive of corresponding verb
+        full_name_obj (string)
+            Name of object.
+        role_name (string)
+            The name of role
+        S (Sign)
+            the Sign of Script
+        actions_sign (dict)
+            the dictionary with values are signs of actions and keys are their
+            names
+        obj_sign (dict)
+            the dictionary with values are signs of placeholders and keys are their
+            names        
+        char_sign (dict)
+            the dictionary with values are signs of characteristics and keys are their
+            names        
+        role_sign (dict)
+            the dictionary with values are roles of characteristics and keys are their
+            names        
+        signifs (dict)
+            the dictionary with values are causal matrices of significances and keys are their
+            names
+    """
     if not role_name in role_sign:
         role_sign[role_name] = Sign(role_name)
         signifs[role_name] = role_sign[role_name].add_significance()
@@ -318,10 +347,40 @@ def _add_signifs(name_act, full_name_obj, role_name,
     connector = signifs[role_name].add_feature(signifs[full_name_obj], zero_out=True)
     obj_sign[full_name_obj].add_out_significance(connector)
 
-def _add_signifs_effect_action(name_act, full_name_obj, role_name,
+def _add_signifs_effect_action(name_act, full_name_obj, add_name_act,
                 actions_sign = {}, role_sign = {}, obj_sign = {}, char_sign = {}, signifs = {}):
+    """
+    The function has to add events into effect of action 'name_act'
+    
+    The input of function:
+        name_act (string)
+            Name of action. Invinitive of corresponding verb
+        full_name_obj (string)
+            Name of object.
+        add_name_act (string)
+            The form of action from text. It is used for constructing participle
+        S (Sign)
+            the Sign of Script
+        actions_sign (dict)
+            the dictionary with values are signs of actions and keys are their
+            names
+        obj_sign (dict)
+            the dictionary with values are signs of placeholders and keys are their
+            names        
+        char_sign (dict)
+            the dictionary with values are signs of characteristics and keys are their
+            names        
+        role_sign (dict)
+            the dictionary with values are roles of characteristics and keys are their
+            names        
+        signifs (dict)
+            the dictionary with values are causal matrices of significances and keys are their
+            names
+    """
     pred_name = "ObjectPredicat"
-    pred_sign = Sign(pred_name)
+    if not pred_name in role_sign:
+        role_sign[pred_name] = Sign(pred_name)
+    pred_sign = role_sign[pred_name]
 
     signifs[pred_name] = pred_sign.add_significance()
     
@@ -338,9 +397,9 @@ def _add_signifs_effect_action(name_act, full_name_obj, role_name,
     
     try:
         morph = pymorphy2.MorphAnalyzer()
-        char_name = morph.parse(name_act)[0].inflect({'PRTF', 'pssv'}).word
+        char_name = morph.parse(add_name_act)[0].inflect({'PRTF', 'perf', 'pssv', 'past'}).word
     except Exception:
-        char_name = name_act + "_PRTF_pssv"
+        char_name = name_act + "_PRTF_pssv_past_perf"
     if not char_name in char_sign:
         char_sign[char_name] = Sign(char_name)
         signifs[char_name] = char_sign[char_name].add_significance()
@@ -372,6 +431,7 @@ def add_signifs(v_descr,
     
     if 'verb' in v_descr:
         name_act = v_descr['verb'][0].lemma
+        add_name_act = sentence[v_descr['verb'][0].index]
         if not name_act in actions_sign:
             actions_sign[name_act] = Sign(name_act)
             signifs[name_act] = actions_sign[name_act].add_significance()
@@ -411,12 +471,18 @@ def add_signifs(v_descr,
             for j in i['объект']:
                 lemma_obj = j[0].lemma
                 full_obj = union(sentence, j[1])
+                #root = get_tree(full_obj)[0]
+                #print("\n"+full_obj, get_tree(full_obj))
+                #print(root.value.lemma)
+                #for child, type_ in root.kids:
+                #    print('-', child.value.lemma, type_)
                 _add_signifs(name_act, lemma_obj, obj_name,
                              actions_sign = actions_sign,
                              role_sign = role_sign,
                              obj_sign = obj_sign,
                              signifs = signifs)
-                _add_signifs_effect_action(name_act, lemma_obj, obj_name,
+                _add_signifs_effect_action(name_act, lemma_obj,
+                                           add_name_act,
                              actions_sign = actions_sign,
                              role_sign = role_sign,
                              obj_sign = obj_sign,
