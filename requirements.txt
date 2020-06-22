@@ -8,3 +8,5 @@ grpcio
 pandas
 google-api-python-client
 git+https://github.com/IINemo/isanlp.git
+pymorphy2
+pymorphy2-dicts-ru
