@@ -18,9 +18,14 @@ class Configuration:
 
 
 def parse(text):
+	__location__ = os.path.abspath(__file__)
 	__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 	configParser = ConfigParser.ConfigParser()
 	configParser.read(os.path.join(__location__, 'intellection_wrapper.cfg'))
+	with open(os.path.join(__location__, 'intellection_wrapper.cfg'), "r") as f:
+		print(f.read())
+		f.close()
+	#configParser.read(os.path.join('./intellection_wrapper.cfg'))
 	config = Configuration()
 	config.webAddress = configParser.get("Common", "webAddress")
 	config.cgiPath = configParser.get("Common", "cgiPath")
