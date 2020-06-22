@@ -9,7 +9,7 @@ Created on Thu Apr 16 06:06:57 2020
 import numpy as np
 import copy
 from ScriptExtract.Preprocessing.TextProcessing import Table
-from ScriptExtract.GraphScript import graph_construction
+import pymorphy2
 
 def get_feature_dict(table, key_word = "depend_lemma"):
     full_list_actions = []
@@ -267,7 +267,7 @@ class Script:
 	
 def get_srcipt(list_files, name_table = "1.pickle", key_word = "sem_rel"):
 	table_ = Table().get_table(list_files, test = lambda act: True, name_table = name_table)
-	(E, V), (start, end), (full_list_actions, verb_dict, feature_dict) = graph_construction.construct_graph(table_, key_word = key_word)
+	(E, V), (start, end), (full_list_actions, verb_dict, feature_dict) = construct_graph(table_, key_word = key_word)
 	script_ = Script(V,E, full_list_actions)
 	return script_
 
@@ -302,25 +302,55 @@ def print_dict(v_desr):
 
 def _add_signifs(name_act, full_name_obj, role_name,
                 actions_sign = {}, role_sign = {}, obj_sign = {}, signifs = {}):
-        if not role_name in role_sign:
-            role_sign[role_name] = Sign(role_name)
-            signifs[role_name] = role_sign[role_name].add_significance()
-        
-        # action -> locativ
-        connector = signifs[name_act].add_feature(signifs[role_name], zero_out=True)
-        role_sign[role_name].add_out_significance(connector)
-        
-        # locativ -> placeholder
-        if not full_name_obj in obj_sign:
-            obj_sign[full_name_obj] = Sign(full_name_obj)
-            signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
+    if not role_name in role_sign:
+        role_sign[role_name] = Sign(role_name)
         signifs[role_name] = role_sign[role_name].add_significance()
-        connector = signifs[role_name].add_feature(signifs[full_name_obj], zero_out=True)
-        obj_sign[full_name_obj].add_out_significance(connector)
+    
+    # action -> locativ
+    connector = signifs[name_act].add_feature(signifs[role_name], zero_out=True)
+    role_sign[role_name].add_out_significance(connector)
+    
+    # locativ -> placeholder
+    if not full_name_obj in obj_sign:
+        obj_sign[full_name_obj] = Sign(full_name_obj)
+        signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
+    signifs[role_name] = role_sign[role_name].add_significance()
+    connector = signifs[role_name].add_feature(signifs[full_name_obj], zero_out=True)
+    obj_sign[full_name_obj].add_out_significance(connector)
+
+def _add_signifs_effect_action(name_act, full_name_obj, role_name,
+                actions_sign = {}, role_sign = {}, obj_sign = {}, char_sign = {}, signifs = {}):
+    pred_name = "ObjectPredicat"
+    pred_sign = Sign(pred_name)
+
+    signifs[pred_name] = pred_sign.add_significance()
+    
+    # action -> predicat
+    connector = signifs[name_act].add_feature(signifs[pred_name], zero_out=True, effect = True)
+    pred_sign.add_out_significance(connector)
+
+    # locativ -> placeholder
+    if not full_name_obj in obj_sign:
+        obj_sign[full_name_obj] = Sign(full_name_obj)
+        signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
+    connector = signifs[pred_name].add_feature(signifs[full_name_obj], zero_out=True)
+    obj_sign[full_name_obj].add_out_significance(connector)
+    
+    try:
+        morph = pymorphy2.MorphAnalyzer()
+        char_name = morph.parse(name_act)[0].inflect({'PRTF', 'pssv'}).word
+    except Exception:
+        char_name = name_act + "_PRTF_pssv"
+    if not char_name in char_sign:
+        char_sign[char_name] = Sign(char_name)
+        signifs[char_name] = char_sign[char_name].add_significance()
+    connector = signifs[pred_name].add_feature(signifs[char_name], zero_out=True)
+    char_sign[char_name].add_out_significance(connector)
 
 def add_signifs(v_descr,
                 S = None,
-                actions_sign = {}, role_sign = {}, obj_sign = {}, signifs = {},
+                actions_sign = {}, role_sign = {}, obj_sign = {}, char_sign = {},
+                signifs = {},
                 script_name = "Script",
                 locativ_name = 'локатив', temporativ_name = 'темпоратив',
                 subj_name = 'субъект', obj_name= 'объект'):
@@ -329,12 +359,22 @@ def add_signifs(v_descr,
     else:
         return
     
+    if 'субъект' in v_descr:
+        obj = v_descr['субъект']
+        stop = True
+        for i in obj:
+            for j in i['субъект']:
+                lemma_subj = j[0].lemma
+                if lemma_subj.lower() == "я":
+                    stop = False
+        if stop:
+            return
+    
     if 'verb' in v_descr:
         name_act = v_descr['verb'][0].lemma
         if not name_act in actions_sign:
             actions_sign[name_act] = Sign(name_act)
             signifs[name_act] = actions_sign[name_act].add_significance()
-        signifs[script_name] = S.add_significance()
         connector = signifs[script_name].add_feature(signifs[name_act], zero_out=True)
         actions_sign[name_act].add_out_significance(connector)
     else:
@@ -362,25 +402,33 @@ def add_signifs(v_descr,
         obj = v_descr['объект']
         for i in obj:
             for j in i['объект']:
+                lemma_obj = j[0].lemma
                 full_obj = union(sentence, j[1])
-                _add_signifs(name_act, full_obj, obj_name,
+                _add_signifs(name_act, lemma_obj, obj_name,
                              actions_sign = actions_sign,
                              role_sign = role_sign,
                              obj_sign = obj_sign,
+                             signifs = signifs)
+                _add_signifs_effect_action(name_act, lemma_obj, obj_name,
+                             actions_sign = actions_sign,
+                             role_sign = role_sign,
+                             obj_sign = obj_sign,
+                             char_sign = char_sign,
                              signifs = signifs)
     if 'субъект' in v_descr:
         obj = v_descr['субъект']
         for i in obj:
             for j in i['субъект']:
+                lemma_subj = j[0].lemma
                 full_subj = union(sentence, j[1])
-                _add_signifs(name_act, full_subj, subj_name,
+                _add_signifs(name_act, lemma_subj, subj_name,
                              actions_sign = actions_sign,
                              role_sign = role_sign,
                              obj_sign = obj_sign,
                              signifs = signifs)
 
 from mapcore.swm.src.components.semnet import Sign
-def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
+def create_script_sign(list_files, name_table= None, key_word = "sem_rel", script_name = "Script"):
     """
     This function creates Script and the required signs for it and 
     for the actions, roles and their possible placeholders (objects).
@@ -391,6 +439,7 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
                         the signs of actions (dict 'actions_sign'),
                         the role signs (dict 'role_sign'),
                         the placeholders signs (dict 'obj_sign'),
+                        characteristics signs (dict 'char_sign')
                         significances (dict 'signifs')
     """
     
@@ -403,21 +452,24 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel"):
     V_descr = graph_script.V_descr
     
     # The script sign
-    S = Sign("Script")
+    S = Sign(script_name)
     
     # The keys of the following dictionaries are signs name. The value is sign
     actions_sign = {}
     role_sign = {}
     obj_sign = {}
+    char_sign = {}
     signifs = {}
     
-    signifs["Script"] = S.add_significance()
+    signifs[script_name] = S.add_significance()
     
     for v in graph_script.V:
         add_signifs(V_descr[v],
                     S = S,
                     signifs = signifs,
+                    script_name = script_name,
                     actions_sign = actions_sign,
                     role_sign = role_sign,
-                    obj_sign = obj_sign)    
-    return S, actions_sign, role_sign, obj_sign, signifs
+                    obj_sign = obj_sign,
+                    char_sign = char_sign)    
+    return S, actions_sign, role_sign, obj_sign, char_sign, signifs
