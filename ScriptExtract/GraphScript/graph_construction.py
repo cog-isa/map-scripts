@@ -375,7 +375,14 @@ def add_signifs(v_descr,
         if not name_act in actions_sign:
             actions_sign[name_act] = Sign(name_act)
             signifs[name_act] = actions_sign[name_act].add_significance()
-        connector = signifs[script_name].add_feature(signifs[name_act], zero_out=True)
+        try:
+            connector = signifs[script_name].add_feature(signifs[name_act],
+                                                       order = 1,
+                                                       zero_out=True)
+        except Exception:
+            connector = signifs[script_name].add_feature(signifs[name_act],
+                                                       order = None,
+                                                       zero_out=True)
         actions_sign[name_act].add_out_significance(connector)
     else:
         return
