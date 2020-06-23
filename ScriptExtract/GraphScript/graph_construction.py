@@ -548,6 +548,4 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel", scrip
                     obj_sign = obj_sign,
                     char_sign = char_sign,
 					order = order)
-        if not connector_script is None:
-            order = connector_script.in_order+1
     return S, actions_sign, role_sign, obj_sign, char_sign, signifs
