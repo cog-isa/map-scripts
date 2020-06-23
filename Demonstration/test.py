@@ -15,3 +15,7 @@ print("\nActions names:", actions_sign.keys())
 print("\nRoles:", role_sign.keys())
 print("\nCharacteristics:", char_sign.keys())
 print("\nPlaceholders:", obj_sign.keys())
+print()
+for key in S.significances:
+    signif = S.significances[key]
+    print(signif.index, signif.cause)
