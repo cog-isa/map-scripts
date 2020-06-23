@@ -412,7 +412,8 @@ def add_signifs(v_descr,
                 signifs = {},
                 script_name = "Script",
                 locativ_name = 'локатив', temporativ_name = 'темпоратив',
-                subj_name = 'субъект', obj_name= 'объект'):
+                subj_name = 'субъект', obj_name= 'объект',
+				order = None):
     if 'Sentence' in v_descr:
         sentence = v_descr['Sentence']
     else:
@@ -436,14 +437,14 @@ def add_signifs(v_descr,
             actions_sign[name_act] = Sign(name_act)
             signifs[name_act] = actions_sign[name_act].add_significance()
         try:
-            connector = signifs[script_name].add_feature(signifs[name_act],
-                                                       order = 1,
+            connector_script = signifs[script_name].add_feature(signifs[name_act],
+                                                       order = order,
                                                        zero_out=True)
         except Exception:
-            connector = signifs[script_name].add_feature(signifs[name_act],
+            connector_script = signifs[script_name].add_feature(signifs[name_act],
                                                        order = None,
                                                        zero_out=True)
-        actions_sign[name_act].add_out_significance(connector)
+        actions_sign[name_act].add_out_significance(connector_script)
     else:
         return
     
@@ -499,6 +500,7 @@ def add_signifs(v_descr,
                              role_sign = role_sign,
                              obj_sign = obj_sign,
                              signifs = signifs)
+    return connector_script
 
 from mapcore.swm.src.components.semnet import Sign
 def create_script_sign(list_files, name_table= None, key_word = "sem_rel", script_name = "Script"):
@@ -535,14 +537,17 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel", scrip
     signifs = {}
     
     signifs[script_name] = S.add_significance()
-    
+    order = None
     for v in graph_script.V:
-        add_signifs(V_descr[v],
+        connector_script = add_signifs(V_descr[v],
                     S = S,
                     signifs = signifs,
                     script_name = script_name,
                     actions_sign = actions_sign,
                     role_sign = role_sign,
                     obj_sign = obj_sign,
-                    char_sign = char_sign)    
+                    char_sign = char_sign,
+					order = order)
+        if not connector_script is None:
+            order = connector_script.in_order+1
     return S, actions_sign, role_sign, obj_sign, char_sign, signifs
