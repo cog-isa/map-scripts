@@ -1,4 +1,5 @@
 git+https://github.com/cog-isa/map-core
+re
 wheel
 numpy
 scipy
