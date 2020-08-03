@@ -259,7 +259,6 @@ class Script:
             if tp in tps:
                 predicat = ch.value.lemma + " (" + root.value.lemma + ")" + "[" + tp + "]"
                 predicates.append(predicat)
-        print(predicates)
         return predicates
         
     def _get_inform(self, v, full_list_actions):
