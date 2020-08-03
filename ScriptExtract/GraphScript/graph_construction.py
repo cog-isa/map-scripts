@@ -11,6 +11,7 @@ import copy
 from ScriptExtract.Preprocessing.TextProcessing import Table
 import pymorphy2
 from ScriptExtract.Preprocessing.action import get_tree
+from mapcore.swm.src.components.semnet import Sign
 
 def get_feature_dict(table, key_word = "depend_lemma"):
     full_list_actions = []
@@ -240,6 +241,26 @@ class Script:
             self.V_descr[v]['темпоратив'] = {'темпоратив':inform['темпоратив'],
                                           'Sentence':sentence,
                                           'verb': inform['VERB']}
+    
+    def extract_predicates(self, index, synt_tree):
+        list_of_vert = synt_tree.kids
+        root = None
+        while len(list_of_vert) > 0:
+            ch, tp = list_of_vert.pop(0)
+            if not ch is None and ch.value.index == index:
+                root = ch
+                break
+            list_of_vert += ch.kids
+        if root is None:
+            return []
+        predicates = []
+        tps = ["amod", "appos", "nmod"]
+        for ch, tp in root.kids:
+            if tp in tps:
+                predicat = ch.value.lemma + " (" + root.value.lemma + ")" + "[" + tp + "]"
+                predicates.append(predicat)
+        print(predicates)
+        return predicates
         
     def _get_inform(self, v, full_list_actions):
         if v == self.start or v == self.end:
@@ -257,10 +278,15 @@ class Script:
                     if not key in ['VERB', 'SEM_REL']:
                         for word, list_depend, _ in act.inform[key]:
                             if equal_word(word, child):
-                                if type_rel in inform:
-                                    inform[type_rel].append((word, list_depend))
+                                if type_rel == "объект":
+                                    synt_tree = act.synt_tree
+                                    predicates = self.extract_predicates(word.index, synt_tree)
                                 else:
-                                    inform[type_rel] = [(word, list_depend)]
+                                    predicates = []
+                                if type_rel in inform:
+                                    inform[type_rel].append((word, list_depend, predicates))
+                                else:
+                                    inform[type_rel] = [(word, list_depend, predicates)]
         return inform
     
     def GetNext(self, v):
@@ -331,9 +357,17 @@ def _add_signifs(name_act, full_name_obj, role_name,
             the dictionary with values are causal matrices of significances and keys are their
             names
     """
-    if not role_name in role_sign:
+    if (not role_name in role_sign) and (not role_name is None):
         role_sign[role_name] = Sign(role_name)
         signifs[role_name] = role_sign[role_name].add_significance()
+    elif role_name is None:
+        # create connector for temporativ and locativ
+        if not full_name_obj in obj_sign:
+            obj_sign[full_name_obj] = Sign(full_name_obj)
+            signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
+        connector = signifs[name_act].add_feature(signifs[full_name_obj], zero_out=True)
+        obj_sign[full_name_obj].add_out_significance(connector)
+        return
     
     # action -> locativ
     connector = signifs[name_act].add_feature(signifs[role_name], zero_out=True)
@@ -377,7 +411,13 @@ def _add_signifs_effect_action(name_act, full_name_obj, add_name_act,
             the dictionary with values are causal matrices of significances and keys are their
             names
     """
-    pred_name = "ObjectPredicat"
+    try:
+        morph = pymorphy2.MorphAnalyzer()
+        char_name = morph.parse(add_name_act)[0].inflect({'PRTF', 'perf', 'pssv', 'past'}).word
+    except Exception:
+        char_name = name_act + "_PRTF_pssv_past_perf"
+        
+    pred_name = char_name + "(" + full_name_obj + ")" + "[amod]"
     if not pred_name in role_sign:
         role_sign[pred_name] = Sign(pred_name)
     pred_sign = role_sign[pred_name]
@@ -411,8 +451,8 @@ def add_signifs(v_descr,
                 actions_sign = {}, role_sign = {}, obj_sign = {}, char_sign = {},
                 signifs = {},
                 script_name = "Script",
-                locativ_name = 'локатив', temporativ_name = 'темпоратив',
-                subj_name = 'субъект', obj_name= 'объект',
+                locativ_name = None, temporativ_name = None,
+                subj_name = None, obj_name= 'объект',
 				order = None):
     if 'Sentence' in v_descr:
         sentence = v_descr['Sentence']
@@ -477,11 +517,18 @@ def add_signifs(v_descr,
                 #print(root.value.lemma)
                 #for child, type_ in root.kids:
                 #    print('-', child.value.lemma, type_)
-                _add_signifs(name_act, lemma_obj, obj_name,
-                             actions_sign = actions_sign,
-                             role_sign = role_sign,
-                             obj_sign = obj_sign,
-                             signifs = signifs)
+                predicates = j[2]
+                for predicate in  predicates:
+                    _add_signifs(name_act, predicate, None,
+                                 actions_sign = actions_sign,
+                                 role_sign = role_sign,
+                                 obj_sign = obj_sign,
+                                 signifs = signifs)
+#                _add_signifs(name_act, lemma_obj, obj_name,
+#                             actions_sign = actions_sign,
+#                             role_sign = role_sign,
+#                             obj_sign = obj_sign,
+#                             signifs = signifs)
                 _add_signifs_effect_action(name_act, lemma_obj,
                                            add_name_act,
                              actions_sign = actions_sign,
@@ -502,7 +549,6 @@ def add_signifs(v_descr,
                              signifs = signifs)
     return connector_script
 
-from mapcore.swm.src.components.semnet import Sign
 def create_script_sign(list_files, name_table= None, key_word = "sem_rel", script_name = "Script"):
     """
     This function creates Script and the required signs for it and 
