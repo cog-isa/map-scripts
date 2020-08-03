@@ -7,6 +7,7 @@ Created on Thu Apr 16 06:06:57 2020
 """
 
 import numpy as np
+import re
 import copy
 from ScriptExtract.Preprocessing.TextProcessing import Table
 import pymorphy2
@@ -326,8 +327,14 @@ def print_dict(v_desr):
                 print("%s (%s) - %s (%s)"%(j[0].lemma, union(i['Sentence'], j[1]),
                                            i['verb'][0].lemma, union(i['Sentence'], i['verb'][1])))
 
+def parsing_predicate(pred_name):
+    full_name_obj = re.search(r"\(.*\)", pred_name).group(0)[1:-1]
+    char_name = re.search(r".*\(", pred_name)[:-2]
+    return char_name, full_name_obj
+    
 def _add_signifs(name_act, full_name_obj, role_name,
-                actions_sign = {}, role_sign = {}, obj_sign = {}, signifs = {}):
+                actions_sign = {}, role_sign = {}, obj_sign = {}, signifs = {}, char_sign = {},
+                is_predicate = False):
     """
     The function has to add events into cause of action 'name_act'
     
@@ -366,6 +373,19 @@ def _add_signifs(name_act, full_name_obj, role_name,
             signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
         connector = signifs[name_act].add_feature(signifs[full_name_obj], zero_out=True)
         obj_sign[full_name_obj].add_out_significance(connector)
+        if is_predicate:
+            predicate_name = full_name_obj
+            char_name, full_name_obj = parsing_predicate(predicate_name)
+            if not full_name_obj in role_sign:
+                role_sign[full_name_obj] = Sign(full_name_obj)
+                signifs[full_name_obj] = role_sign[full_name_obj].add_significance()
+            connector = signifs[predicate_name].add_feature(signifs[full_name_obj], zero_out=True)
+            role_sign[full_name_obj].add_out_significance(connector)
+            if not char_name in char_sign:
+                char_sign[char_name] = Sign(char_name)
+                signifs[char_name] = char_sign[char_name].add_significance()
+            connector = signifs[predicate_name].add_feature(signifs[char_name], zero_out=True)
+            char_sign[char_name].add_out_significance(connector)
         return
     
     # action -> locativ
@@ -416,6 +436,34 @@ def _add_signifs_effect_action(name_act, full_name_obj, add_name_act,
     except Exception:
         char_name = name_act + "_PRTF_pssv_past_perf"
         
+    pred_name = "{not}" + char_name + "(" + full_name_obj + ")" + "[amod]"
+    if not pred_name in role_sign:
+        role_sign[pred_name] = Sign(pred_name)
+    pred_sign = role_sign[pred_name]
+
+    signifs[pred_name] = pred_sign.add_significance()
+    
+    # action -> predicat
+    connector = signifs[name_act].add_feature(signifs[pred_name], zero_out=True, effect = True)
+    pred_sign.add_out_significance(connector)
+
+    if not full_name_obj in obj_sign:
+        obj_sign[full_name_obj] = Sign(full_name_obj)
+        signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
+    connector = signifs[pred_name].add_feature(signifs[full_name_obj], zero_out=True)
+    obj_sign[full_name_obj].add_out_significance(connector)
+    
+    try:
+        morph = pymorphy2.MorphAnalyzer()
+        char_name = morph.parse(add_name_act)[0].inflect({'PRTF', 'perf', 'pssv', 'past'}).word
+    except Exception:
+        char_name = name_act + "_PRTF_pssv_past_perf"
+    if not char_name in char_sign:
+        char_sign[char_name] = Sign(char_name)
+        signifs[char_name] = char_sign[char_name].add_significance()
+    connector = signifs[pred_name].add_feature(signifs[char_name], zero_out=True)
+    char_sign[char_name].add_out_significance(connector)
+
     pred_name = char_name + "(" + full_name_obj + ")" + "[amod]"
     if not pred_name in role_sign:
         role_sign[pred_name] = Sign(pred_name)
@@ -427,7 +475,6 @@ def _add_signifs_effect_action(name_act, full_name_obj, add_name_act,
     connector = signifs[name_act].add_feature(signifs[pred_name], zero_out=True, effect = True)
     pred_sign.add_out_significance(connector)
 
-    # locativ -> placeholder
     if not full_name_obj in obj_sign:
         obj_sign[full_name_obj] = Sign(full_name_obj)
         signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
@@ -494,7 +541,7 @@ def add_signifs(v_descr,
         _add_signifs(name_act, full_locativ, locativ_name,
                      actions_sign = actions_sign,
                      role_sign = role_sign,
-                     obj_sign = obj_sign,
+                     obj_sign = obj_sign, char_sign = char_sign,
                      signifs = signifs)
         
     if 'темпоратив' in v_descr:
@@ -502,7 +549,7 @@ def add_signifs(v_descr,
         _add_signifs(name_act, full_temporativ, temporativ_name,
                      actions_sign = actions_sign,
                      role_sign = role_sign,
-                     obj_sign = obj_sign,
+                     obj_sign = obj_sign, char_sign = char_sign,
                      signifs = signifs)
         
     if 'объект' in v_descr:
@@ -521,8 +568,8 @@ def add_signifs(v_descr,
                     _add_signifs(name_act, predicate, None,
                                  actions_sign = actions_sign,
                                  role_sign = role_sign,
-                                 obj_sign = obj_sign,
-                                 signifs = signifs)
+                                 obj_sign = obj_sign, char_sign = char_sign,
+                                 signifs = signifs, is_predicate = True)
 #                _add_signifs(name_act, lemma_obj, obj_name,
 #                             actions_sign = actions_sign,
 #                             role_sign = role_sign,
@@ -544,7 +591,7 @@ def add_signifs(v_descr,
                 _add_signifs(name_act, lemma_subj, subj_name,
                              actions_sign = actions_sign,
                              role_sign = role_sign,
-                             obj_sign = obj_sign,
+                             obj_sign = obj_sign, char_sign = char_sign,
                              signifs = signifs)
     return connector_script
 
