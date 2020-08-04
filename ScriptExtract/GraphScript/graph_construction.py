@@ -661,17 +661,21 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel", scrip
     hyperonyms_key = "Гиперонимы"
     hyponyms_key = "Гипонимы"
     synonyms_key = "Синонимы"
-    print(obj_sign_names)
     for obj_name in obj_sign_names:
-        response = parser.get_word_info('легковой автомобиль')
-        print(response)
+        response = parser.get_word_info(obj_name)
         hyperonyms = response[hyperonyms_key]
+        if hyperonyms is None:
+            hyperonyms = []
         for word in hyperonyms:
             add_obj_link(obj_name, word, link = "hyper", obj_sign = obj_sign, signifs = signifs)
         hyponyms = response[hyponyms_key]
+        if hyponyms is None:
+            hyponyms = []
         for word in hyponyms:
             add_obj_link(obj_name, word, link = "hypo", obj_sign = obj_sign, signifs = signifs)
         synonyms = response[synonyms_key]
+        if synonyms is None:
+            synonyms = []
         for word in synonyms:
             add_obj_link(obj_name, word, link = "syno", obj_sign = obj_sign, signifs = signifs)
     return S, actions_sign, role_sign, obj_sign, char_sign, signifs
