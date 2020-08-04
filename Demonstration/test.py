@@ -22,6 +22,20 @@ print_list("\nCharacteristics:", char_sign.keys())
 print_list("\nPlaceholders:", obj_sign.keys())
 print()
 
-for key in S.significances:
-    signif = S.significances[key]
-    print(signif.index, signif.cause)
+def print_list_rec(sign, n=0):
+    print(n*"\t" + sign.name)
+    for key in sign.significances:
+        signif = sign.significances[key]
+        print()
+        print(n*"\t" + "-Cause")
+        for i in signif.cause:
+            print_list_rec(list(i.coincidences)[0].out_sign, n+1)
+            
+        print()
+        print(n*"\t" + "-Effect")
+        for i in signif.effect:
+            print_list_rec(list(i.coincidences)[0].out_sign, n+1)
+        print()
+
+print_list_rec(S)
+
