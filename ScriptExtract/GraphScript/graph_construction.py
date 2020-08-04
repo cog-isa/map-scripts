@@ -12,8 +12,7 @@ import numpy as np
 import pymorphy2
 
 from ScriptExtract.Preprocessing.TextProcessing import Table
-from ScriptExtract.site_parser import Parser
-
+from ScriptExtract.SiteParser.site_parser import Parser
 from mapcore.swm.src.components.semnet import Sign
 
 def get_feature_dict(table, key_word = "depend_lemma"):
@@ -662,8 +661,10 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel", scrip
     hyperonyms_key = "Гиперонимы"
     hyponyms_key = "Гипонимы"
     synonyms_key = "Синонимы"
+    print(obj_sign_names)
     for obj_name in obj_sign_names:
         response = parser.get_word_info('легковой автомобиль')
+        print(response)
         hyperonyms = response[hyperonyms_key]
         for word in hyperonyms:
             add_obj_link(obj_name, word, link = "hyper", obj_sign = obj_sign, signifs = signifs)
