@@ -582,6 +582,7 @@ def add_signifs(v_descr,
                              obj_sign = obj_sign,
                              char_sign = char_sign,
                              signifs = signifs)
+    """
     if 'субъект' in v_descr:
         obj = v_descr['субъект']
         for i in obj:
@@ -593,6 +594,7 @@ def add_signifs(v_descr,
                              role_sign = role_sign,
                              obj_sign = obj_sign, char_sign = char_sign,
                              signifs = signifs)
+    """
     return connector_script
 
 def create_script_sign(list_files, name_table= None, key_word = "sem_rel", script_name = "Script"):
