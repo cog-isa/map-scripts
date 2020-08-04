@@ -7,11 +7,13 @@ Created on Thu Apr 16 06:06:57 2020
 """
 
 import re
+
 import numpy as np
-import copy
-from ScriptExtract.Preprocessing.TextProcessing import Table
 import pymorphy2
-from ScriptExtract.Preprocessing.action import get_tree
+
+from ScriptExtract.Preprocessing.TextProcessing import Table
+from ScriptExtract.site_parser import Parser
+
 from mapcore.swm.src.components.semnet import Sign
 
 def get_feature_dict(table, key_word = "depend_lemma"):
@@ -597,6 +599,19 @@ def add_signifs(v_descr,
     """
     return connector_script
 
+def add_obj_link(obj_name, word, link = "hyper", obj_sign = {}, signifs = {}):
+    if not word in obj_sign:
+        obj_sign[word] = Sign(word)
+        signifs[word] = obj_sign[word].add_significance()
+        
+    if link == "hyper" or link == "syno":
+        connector = signifs[word].add_feature(signifs[obj_name], zero_out=True)
+        obj_sign[obj_name].add_out_significance(connector)
+        
+    if link == "hypo" or link == "syno":
+        connector = signifs[obj_name].add_feature(signifs[word], zero_out=True)
+        obj_sign[word].add_out_significance(connector)
+
 def create_script_sign(list_files, name_table= None, key_word = "sem_rel", script_name = "Script"):
     """
     This function creates Script and the required signs for it and 
@@ -642,4 +657,20 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel", scrip
                     obj_sign = obj_sign,
                     char_sign = char_sign,
 					order = order)
+    obj_sign_names = list(obj_sign.keys())
+    parser = Parser()
+    hyperonyms_key = "Гиперонимы"
+    hyponyms_key = "Гипонимы"
+    synonyms_key = "Синонимы"
+    for obj_name in obj_sign_names:
+        response = parser.get_word_info('легковой автомобиль')
+        hyperonyms = response[hyperonyms_key]
+        for word in hyperonyms:
+            add_obj_link(obj_name, word, link = "hyper", obj_sign = obj_sign, signifs = signifs)
+        hyponyms = response[hyponyms_key]
+        for word in hyponyms:
+            add_obj_link(obj_name, word, link = "hypo", obj_sign = obj_sign, signifs = signifs)
+        synonyms = response[synonyms_key]
+        for word in synonyms:
+            add_obj_link(obj_name, word, link = "syno", obj_sign = obj_sign, signifs = signifs)
     return S, actions_sign, role_sign, obj_sign, char_sign, signifs
