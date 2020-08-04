@@ -673,9 +673,9 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel", scrip
             hyponyms = []
         for word in hyponyms:
             add_obj_link(obj_name, word, link = "hypo", obj_sign = obj_sign, signifs = signifs)
-        synonyms = response[synonyms_key]
-        if synonyms is None:
-            synonyms = []
-        for word in synonyms:
-            add_obj_link(obj_name, word, link = "syno", obj_sign = obj_sign, signifs = signifs)
+        #synonyms = response[synonyms_key]
+        #if synonyms is None:
+        #    synonyms = []
+        #for word in synonyms:
+        #    add_obj_link(obj_name, word, link = "syno", obj_sign = obj_sign, signifs = signifs)
     return S, actions_sign, role_sign, obj_sign, char_sign, signifs
