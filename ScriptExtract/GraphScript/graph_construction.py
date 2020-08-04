@@ -445,7 +445,7 @@ def _add_signifs_effect_action(name_act, full_name_obj, add_name_act,
     signifs[pred_name] = pred_sign.add_significance()
     
     # action -> predicat
-    connector = signifs[name_act].add_feature(signifs[pred_name], zero_out=True, effect = True)
+    connector = signifs[name_act].add_feature(signifs[pred_name], zero_out=True, effect = False)
     pred_sign.add_out_significance(connector)
 
     if not full_name_obj in obj_sign:
