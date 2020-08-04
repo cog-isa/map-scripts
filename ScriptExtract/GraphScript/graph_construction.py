@@ -6,8 +6,8 @@ Created on Thu Apr 16 06:06:57 2020
 @author: elias
 """
 
-import numpy as np
 import re
+import numpy as np
 import copy
 from ScriptExtract.Preprocessing.TextProcessing import Table
 import pymorphy2
@@ -329,9 +329,9 @@ def print_dict(v_desr):
 
 def parsing_predicate(pred_name):
     full_name_obj = re.search(r"\(.*\)", pred_name).group(0)[1:-1]
-    char_name = re.search(r".*\(", pred_name)[:-2]
+    char_name = re.search(r".*\(", pred_name).group(0)[:-2]
     return char_name, full_name_obj
-    
+
 def _add_signifs(name_act, full_name_obj, role_name,
                 actions_sign = {}, role_sign = {}, obj_sign = {}, signifs = {}, char_sign = {},
                 is_predicate = False):
@@ -368,19 +368,19 @@ def _add_signifs(name_act, full_name_obj, role_name,
         signifs[role_name] = role_sign[role_name].add_significance()
     elif role_name is None:
         # create connector for temporativ and locativ
-        if not full_name_obj in obj_sign:
-            obj_sign[full_name_obj] = Sign(full_name_obj)
-            signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
+        if not full_name_obj in role_sign:
+            role_sign[full_name_obj] = Sign(full_name_obj)
+            signifs[full_name_obj] = role_sign[full_name_obj].add_significance()
         connector = signifs[name_act].add_feature(signifs[full_name_obj], zero_out=True)
-        obj_sign[full_name_obj].add_out_significance(connector)
+        role_sign[full_name_obj].add_out_significance(connector)
         if is_predicate:
             predicate_name = full_name_obj
             char_name, full_name_obj = parsing_predicate(predicate_name)
-            if not full_name_obj in role_sign:
-                role_sign[full_name_obj] = Sign(full_name_obj)
-                signifs[full_name_obj] = role_sign[full_name_obj].add_significance()
+            if not full_name_obj in obj_sign:
+                obj_sign[full_name_obj] = Sign(full_name_obj)
+                signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
             connector = signifs[predicate_name].add_feature(signifs[full_name_obj], zero_out=True)
-            role_sign[full_name_obj].add_out_significance(connector)
+            obj_sign[full_name_obj].add_out_significance(connector)
             if not char_name in char_sign:
                 char_sign[char_name] = Sign(char_name)
                 signifs[char_name] = char_sign[char_name].add_significance()
