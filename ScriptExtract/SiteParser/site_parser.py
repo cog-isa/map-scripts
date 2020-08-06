@@ -31,7 +31,8 @@ class Parser:
                 except AttributeError:
                     break
             if key:
-                word_descr[key] = None
+                if key not in word_descr:
+                    word_descr[key] = None
                 if id+1 < descr_len:
                     if word_content[id+1].name == 'ol':
                         if key != 'Значение':
@@ -41,18 +42,21 @@ class Parser:
                             wt = wt.split(', ')
                             wt = [el for el in wt if re.findall('\w+', el)]
                             if wt:
-                                word_descr[key] = [el.strip() for el in wt]
+                                if not word_descr[key]:
+                                    word_descr[key] = [el.strip() for el in wt]
                         else:
                             wt = re.sub(r'\n', ' ', word_content[id+1].text)
-                            word_descr[key] = wt
+                            if not word_descr[key]:
+                                word_descr[key] = wt
 
         return word_descr
 
 
 if __name__ == "__main__":
     parser = Parser()
-    response0 = parser.get_word_info('легковой автомобиль')
-    print(response0)
-    response1 = parser.get_word_info('голос')
-    response2 = parser.get_word_info('грузовой автомобиль')
+    #response0 = parser.get_word_info('легковой автомобиль')
+    response01 = parser.get_word_info('автомобиль')
+    print(response01)
+    #response1 = parser.get_word_info('голос')
+    #response2 = parser.get_word_info('грузовой автомобиль')
     print()
