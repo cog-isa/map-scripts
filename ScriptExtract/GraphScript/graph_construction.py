@@ -372,9 +372,12 @@ def _add_signifs(name_act, full_name_obj, role_name,
         if not full_name_obj in role_sign:
             role_sign[full_name_obj] = Sign(full_name_obj)
             signifs[full_name_obj] = role_sign[full_name_obj].add_significance()
+            new_predicate = True
+        else:
+            new_predicate = False
         connector = signifs[name_act].add_feature(signifs[full_name_obj], zero_out=True)
         role_sign[full_name_obj].add_out_significance(connector)
-        if is_predicate:
+        if is_predicate and new_predicate:
             predicate_name = full_name_obj
             char_name, full_name_obj = parsing_predicate(predicate_name)
             if not full_name_obj in obj_sign:
