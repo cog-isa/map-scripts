@@ -538,20 +538,34 @@ def add_signifs(v_descr,
     signifs[name_act] = actions_sign[name_act].add_significance()
     
     if 'локатив' in v_descr:
+        full_name_obj = v_descr['локатив']['локатив'][0][0].lemma
         full_locativ = union(sentence, v_descr['локатив']['локатив'][0][1])
         _add_signifs(name_act, full_locativ, locativ_name,
                      actions_sign = actions_sign,
                      role_sign = role_sign,
                      obj_sign = obj_sign, char_sign = char_sign,
                      signifs = signifs)
+        predicate_name = full_locativ
+        if not full_name_obj in obj_sign:
+            obj_sign[full_name_obj] = Sign(full_name_obj)
+            signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
+        connector = signifs[predicate_name].add_feature(signifs[full_name_obj], zero_out=True)
+        obj_sign[full_name_obj].add_out_significance(connector)
         
     if 'темпоратив' in v_descr:
+        full_name_obj = v_descr['темпоратив'][1][0].lemma
         full_temporativ = union(sentence, v_descr['темпоратив'][1])
         _add_signifs(name_act, full_temporativ, temporativ_name,
                      actions_sign = actions_sign,
                      role_sign = role_sign,
                      obj_sign = obj_sign, char_sign = char_sign,
                      signifs = signifs)
+        predicate_name = full_temporativ
+        if not full_name_obj in obj_sign:
+            obj_sign[full_name_obj] = Sign(full_name_obj)
+            signifs[full_name_obj] = obj_sign[full_name_obj].add_significance()
+        connector = signifs[predicate_name].add_feature(signifs[full_name_obj], zero_out=True)
+        obj_sign[full_name_obj].add_out_significance(connector)
         
     if 'объект' in v_descr:
         obj = v_descr['объект']
@@ -664,11 +678,13 @@ def create_script_sign(list_files, name_table= None, key_word = "sem_rel", scrip
     for obj_name in obj_sign_names:
         response = parser.get_word_info(obj_name)
         hyperonyms = response[hyperonyms_key]
+
         if hyperonyms is None:
             hyperonyms = []
         for word in hyperonyms:
             add_obj_link(obj_name, word, link = "hyper", obj_sign = obj_sign, signifs = signifs)
         hyponyms = response[hyponyms_key]
+
         if hyponyms is None:
             hyponyms = []
         for word in hyponyms:
