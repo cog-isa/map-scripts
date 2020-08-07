@@ -63,16 +63,16 @@ def create_situation(name, predicates):
 def get_situations(S):
     start_predicates = extract_predicates(S, effect = False)
     start = create_situation(name = 'start', predicates = start_predicates)
-    end_predicates = extract_predicates(S, effect = False)
-    end = create_situation(name = 'start', predicates = end_predicates)
-    return start, end
+    goal_predicates = extract_predicates(S, effect = False)
+    goal = create_situation(name = 'goal', predicates = goal_predicates)
+    return start, goal
 
 name_table = 'simple_auto_table.pickle'
 path = "../Texts/"
 list_files = [path + 'text0_0.txt']
 S, actions_sign, role_sign, obj_sign, char_sign, signifs = create_script_sign(list_files, name_table)
 
-start, end = get_situations(S)
+start, goal = get_situations(S)
 
 
 
