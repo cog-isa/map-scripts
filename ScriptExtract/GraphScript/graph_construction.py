@@ -504,6 +504,13 @@ def add_signifs(v_descr,
                 locativ_name = None, temporativ_name = None,
                 subj_name = None, obj_name= 'объект',
 				order = None):
+    possible_predicate_names = ['объект']
+    mark = False
+    for name in possible_predicate_names:
+        mark = mark or (name in v_descr)
+    if not mark:
+        return
+
     if 'Sentence' in v_descr:
         sentence = v_descr['Sentence']
     else:
