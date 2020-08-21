@@ -546,9 +546,7 @@ def add_signifs(v_descr,
         actions_sign[name_act].add_out_significance(connector_script)
     else:
         return
-    
-    #signifs[name_act] = actions_sign[name_act].add_significance()
-    
+        
     if 'локатив' in v_descr:
         full_name_obj = v_descr['локатив']['локатив'][0][0].lemma
         full_locativ = union(sentence, v_descr['локатив']['локатив'][0][1])
