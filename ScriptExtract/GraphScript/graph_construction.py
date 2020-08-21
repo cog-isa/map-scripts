@@ -532,20 +532,22 @@ def add_signifs(v_descr,
         add_name_act = sentence[v_descr['verb'][0].index]
         if not name_act in actions_sign:
             actions_sign[name_act] = Sign(name_act)
-            signifs[name_act] = actions_sign[name_act].add_significance()
+        signifs[name_act] = actions_sign[name_act].add_significance()
         try:
             connector_script = signifs[script_name].add_feature(signifs[name_act],
                                                        order = order,
-                                                       zero_out=True)
+                                                       zero_out=False)
+                                                       #zero_out=True)
         except Exception:
             connector_script = signifs[script_name].add_feature(signifs[name_act],
                                                        order = None,
-                                                       zero_out=True)
+                                                       zero_out=False)
+                                                       #zero_out=True)
         actions_sign[name_act].add_out_significance(connector_script)
     else:
         return
     
-    signifs[name_act] = actions_sign[name_act].add_significance()
+    #signifs[name_act] = actions_sign[name_act].add_significance()
     
     if 'локатив' in v_descr:
         full_name_obj = v_descr['локатив']['локатив'][0][0].lemma
